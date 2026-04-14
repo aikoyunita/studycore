@@ -50,36 +50,6 @@ function App() {
   const NOTES_API = process.env.REACT_APP_NOTES_API || 'http://localhost:5003';
   const HABITS_API = process.env.REACT_APP_HABITS_API || 'http://localhost:5004';
 
-  // Load data on component mount
-  useEffect(() => {
-    loadTasks();
-    loadNotes();
-    loadHabits();
-    checkApiStatus();
-    
-    // Change quote every 30 seconds
-    const quoteInterval = setInterval(() => {
-      setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-    }, 30000);
-
-    return () => clearInterval(quoteInterval);
-  }, []);
-
-  // Pomodoro timer effect
-  useEffect(() => {
-    let interval = null;
-    if (isRunning && pomodoroTime > 0) {
-      interval = setInterval(() => {
-        setPomodoroTime(time => time - 1);
-      }, 1000);
-    } else if (pomodoroTime === 0) {
-      setIsRunning(false);
-      alert('Pomodoro session complete! Time for a break bestie 💕');
-      setPomodoroTime(pomodoroTotalTime);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, pomodoroTime, pomodoroTotalTime]);
-
   // Check API status
   const checkApiStatus = async () => {
     const status = { tasks: false, notes: false, habits: false, pomodoro: true };
@@ -98,44 +68,75 @@ function App() {
     setApiStatus(status);
   };
 
-  // API functions
-  const loadTasks = async () => {
-    try {
-      const response = await axios.get(`${TASKS_API}/api/tasks`);
-      setTasks(response.data);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      setTasks([
-        { _id: '1', text: 'finish math homework', completed: false, priority: 'high' },
-        { _id: '2', text: 'study for chemistry test', completed: false, priority: 'medium' }
-      ]);
-    }
-  };
+  // Load data on component mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const response = await axios.get(`${TASKS_API}/api/tasks`);
+        setTasks(response.data);
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+        setTasks([
+          { _id: '1', text: 'finish math homework', completed: false, priority: 'high' },
+          { _id: '2', text: 'study for chemistry test', completed: false, priority: 'medium' }
+        ]);
+      }
+    };
 
-  const loadNotes = async () => {
-    try {
-      const response = await axios.get(`${NOTES_API}/api/notes`);
-      setNotes(response.data);
-    } catch (error) {
-      console.error('Error loading notes:', error);
-      setNotes([
-        { _id: '1', title: 'Study Tips', content: 'remember to take breaks and stay hydrated! ✨' }
-      ]);
-    }
-  };
+    const loadNotes = async () => {
+      try {
+        const response = await axios.get(`${NOTES_API}/api/notes`);
+        setNotes(response.data);
+      } catch (error) {
+        console.error('Error loading notes:', error);
+        setNotes([
+          { _id: '1', title: 'Study Tips', content: 'remember to take breaks and stay hydrated! ✨' }
+        ]);
+      }
+    };
 
-  const loadHabits = async () => {
-    try {
-      const response = await axios.get(`${HABITS_API}/api/habits`);
-      setHabits(response.data);
-    } catch (error) {
-      console.error('Error loading habits:', error);
-      setHabits([
-        { _id: '1', name: 'drink water', streak: 5, completed: false, category: 'health' },
-        { _id: '2', name: 'read for 30 mins', streak: 3, completed: true, category: 'learning' }
-      ]);
-    }
-  };
+    const loadHabits = async () => {
+      try {
+        const response = await axios.get(`${HABITS_API}/api/habits`);
+        setHabits(response.data);
+      } catch (error) {
+        console.error('Error loading habits:', error);
+        setHabits([
+          { _id: '1', name: 'drink water', streak: 5, completed: false, category: 'health' },
+          { _id: '2', name: 'read for 30 mins', streak: 3, completed: true, category: 'learning' }
+        ]);
+      }
+    };
+
+    const checkApiStatusLocal = async () => {
+      const status = { tasks: false, notes: false, habits: false, pomodoro: true };
+      try {
+        await axios.get(`${TASKS_API}/health`);
+        status.tasks = true;
+      } catch {}
+      try {
+        await axios.get(`${NOTES_API}/health`);
+        status.notes = true;
+      } catch {}
+      try {
+        await axios.get(`${HABITS_API}/health`);
+        status.habits = true;
+      } catch {}
+      setApiStatus(status);
+    };
+
+    loadTasks();
+    loadNotes();
+    loadHabits();
+    checkApiStatusLocal();
+    
+    // Change quote every 30 seconds
+    const quoteInterval = setInterval(() => {
+      setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
+    }, 30000);
+
+    return () => clearInterval(quoteInterval);
+  }, [quotes, TASKS_API, NOTES_API, HABITS_API]);
 
   const addTask = async () => {
     if (!newTask.trim()) return;
@@ -275,7 +276,6 @@ function App() {
   };
 
   const completedCount = tasks.filter(t => t.completed).length;
-  const activeHabitsCount = habits.length;
   const totalStreak = habits.reduce((sum, h) => sum + h.streak, 0);
 
   const circumference = 2 * Math.PI * 80;
@@ -330,62 +330,192 @@ function App() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="section">
+            <div className="dashboard-welcome">
+              <h1 className="welcome-title">Welcome back, productivity champion! 🚀</h1>
+              <p className="welcome-subtitle">Ready to crush your goals today?</p>
+            </div>
+            
             <div className="section-header">
-              <h2>📊 Dashboard</h2>
-              <p className="section-subtitle">your productivity overview</p>
+              <h2>📊 Your Progress Overview</h2>
+              <p className="section-subtitle">track your productivity journey</p>
             </div>
             
             <div className="stat-cards">
-              <div className="stat-card">
-                <h3>{tasks.length}/{completedCount} tasks done</h3>
+              <div className="stat-card wow-card">
+                <div className="stat-icon">📝</div>
+                <div className="stat-content">
+                  <h3>{tasks.length}/{completedCount}</h3>
+                  <p>Tasks Completed</p>
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: tasks.length > 0 ? `${(completedCount / tasks.length) * 100}%` : '0%' }}
+                    ></div>
+                  </div>
+                </div>
               </div>
-              <div className="stat-card">
-                <h3>{activeHabitsCount} active habits ({totalStreak} total streak)</h3>
+              <div className="stat-card wow-card">
+                <div className="stat-icon">🔥</div>
+                <div className="stat-content">
+                  <h3>{totalStreak}</h3>
+                  <p>Total Habit Streaks</p>
+                  <div className="streak-indicator">
+                    {Array(Math.min(totalStreak, 10)).fill().map((_, i) => (
+                      <span key={i} className="flame">🔥</span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="stat-card">
-                <h3>{notes.length} notes saved</h3>
+              <div className="stat-card wow-card">
+                <div className="stat-icon">📚</div>
+                <div className="stat-content">
+                  <h3>{notes.length}</h3>
+                  <p>Notes Captured</p>
+                  <div className="note-stack">
+                    {Array(Math.min(notes.length, 5)).fill().map((_, i) => (
+                      <div key={i} className="note-layer" style={{ transform: `translateY(${i * 2}px) rotate(${i * 2}deg)` }}>
+                        📄
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="stat-card">
-                <h3>0 sessions today</h3>
+              <div className="stat-card wow-card">
+                <div className="stat-icon">⏱️</div>
+                <div className="stat-content">
+                  <h3>0</h3>
+                  <p>Focus Sessions Today</p>
+                  <div className="session-dots">
+                    <span className="session-dot active">●</span>
+                    <span className="session-dot">●</span>
+                    <span className="session-dot">●</span>
+                    <span className="session-dot">●</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="api-status">
-              <h3>Microservices Status</h3>
-              <div className="api-row">
-                <span>Tasks API (port 5001)</span>
-                <div className="dot" style={{ background: apiStatus.tasks ? '#06D6A0' : '#FF6B6B' }}></div>
+            <div className="dashboard-grid">
+              <div className="api-status wow-panel">
+                <h3>🚀 Microservices Health</h3>
+                <div className="api-grid">
+                  <div className="api-service">
+                    <div className="service-icon">📋</div>
+                    <div className="service-info">
+                      <span className="service-name">Tasks API</span>
+                      <span className="service-port">5001</span>
+                    </div>
+                    <div className={`status-indicator ${apiStatus.tasks ? 'online' : 'offline'}`}>
+                      <div className="status-dot"></div>
+                      <span>{apiStatus.tasks ? 'Online' : 'Offline'}</span>
+                    </div>
+                  </div>
+                  <div className="api-service">
+                    <div className="service-icon">🍅</div>
+                    <div className="service-info">
+                      <span className="service-name">Pomodoro API</span>
+                      <span className="service-port">5002</span>
+                    </div>
+                    <div className={`status-indicator ${apiStatus.pomodoro ? 'online' : 'offline'}`}>
+                      <div className="status-dot"></div>
+                      <span>{apiStatus.pomodoro ? 'Online' : 'Offline'}</span>
+                    </div>
+                  </div>
+                  <div className="api-service">
+                    <div className="service-icon">📝</div>
+                    <div className="service-info">
+                      <span className="service-name">Notes API</span>
+                      <span className="service-port">5003</span>
+                    </div>
+                    <div className={`status-indicator ${apiStatus.notes ? 'online' : 'offline'}`}>
+                      <div className="status-dot"></div>
+                      <span>{apiStatus.notes ? 'Online' : 'Offline'}</span>
+                    </div>
+                  </div>
+                  <div className="api-service">
+                    <div className="service-icon">⭐</div>
+                    <div className="service-info">
+                      <span className="service-name">Habits API</span>
+                      <span className="service-port">5004</span>
+                    </div>
+                    <div className={`status-indicator ${apiStatus.habits ? 'online' : 'offline'}`}>
+                      <div className="status-dot"></div>
+                      <span>{apiStatus.habits ? 'Online' : 'Offline'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="system-status">
+                  <div className="status-message">
+                    <span className="status-icon">⚡</span>
+                    All services running independently via Docker Compose
+                  </div>
+                </div>
               </div>
-              <div className="api-row">
-                <span>Pomodoro API (port 5002)</span>
-                <div className="dot" style={{ background: apiStatus.pomodoro ? '#06D6A0' : '#FF6B6B' }}></div>
-              </div>
-              <div className="api-row">
-                <span>Notes API (port 5003)</span>
-                <div className="dot" style={{ background: apiStatus.notes ? '#06D6A0' : '#FF6B6B' }}></div>
-              </div>
-              <div className="api-row">
-                <span>Habits API (port 5004)</span>
-                <div className="dot" style={{ background: apiStatus.habits ? '#06D6A0' : '#FF6B6B' }}></div>
-              </div>
-              <p className="api-note">All services run independently via Docker Compose</p>
-            </div>
 
-            <div className="architecture">
-              <h3>System Architecture</h3>
-              <div className="layer top">
-                <div className="box">React Frontend (port 3000)</div>
+              <div className="architecture wow-panel">
+                <h3>🏗️ System Architecture</h3>
+                <div className="architecture-diagram">
+                  <div className="arch-layer frontend-layer">
+                    <div className="arch-box frontend-box">
+                      <div className="box-icon">🌐</div>
+                      <div className="box-content">
+                        <strong>React Frontend</strong>
+                        <small>Port 3000</small>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="connection-line"></div>
+                  
+                  <div className="arch-layer api-layer">
+                    <div className="api-cluster">
+                      <div className="arch-box api-box tasks-box">
+                        <div className="box-icon">📋</div>
+                        <div className="box-content">
+                          <strong>Tasks API</strong>
+                          <small>Port 5001</small>
+                        </div>
+                      </div>
+                      <div className="arch-box api-box pomodoro-box">
+                        <div className="box-icon">🍅</div>
+                        <div className="box-content">
+                          <strong>Pomodoro API</strong>
+                          <small>Port 5002</small>
+                        </div>
+                      </div>
+                      <div className="arch-box api-box notes-box">
+                        <div className="box-icon">📝</div>
+                        <div className="box-content">
+                          <strong>Notes API</strong>
+                          <small>Port 5003</small>
+                        </div>
+                      </div>
+                      <div className="arch-box api-box habits-box">
+                        <div className="box-icon">⭐</div>
+                        <div className="box-content">
+                          <strong>Habits API</strong>
+                          <small>Port 5004</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="connection-line"></div>
+                  
+                  <div className="arch-layer database-layer">
+                    <div className="arch-box database-box">
+                      <div className="box-icon">🗄️</div>
+                      <div className="box-content">
+                        <strong>MongoDB Atlas</strong>
+                        <small>Cloud Database</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="architecture-footer">
+                  <span className="docker-badge">🐳 Containerised with Docker Compose</span>
+                </div>
               </div>
-              <div className="layer middle">
-                <div className="box api-box tasks">Tasks API :5001</div>
-                <div className="box api-box pomodoro">Pomodoro API :5002</div>
-                <div className="box api-box notes">Notes API :5003</div>
-                <div className="box api-box habits">Habits API :5004</div>
-              </div>
-              <div className="layer bottom">
-                <div className="box">MongoDB Atlas (cloud)</div>
-              </div>
-              <p>Containerised with Docker Compose</p>
             </div>
           </div>
         )}
