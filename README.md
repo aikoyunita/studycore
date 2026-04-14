@@ -61,8 +61,5 @@ All services connect to a shared MongoDB Atlas cloud database.
 - `POST /api/habits` - Create habit
 - `PUT /api/habits/:id` - Update habit
 
-## Screenshots
-
-[screenshot here]
 
 ## Built as a full-stack microservices project to demonstrate containerisation, API design, and React frontend development
