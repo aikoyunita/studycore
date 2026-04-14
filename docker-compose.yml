@@ -1,0 +1,81 @@
+services:
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_TASKS_API=http://localhost:5001
+      - REACT_APP_POMODORO_API=http://localhost:5002
+      - REACT_APP_NOTES_API=http://localhost:5003
+      - REACT_APP_HABITS_API=http://localhost:5004
+    depends_on:
+      - tasks-api
+      - pomodoro-api
+      - notes-api
+      - habits-api
+    networks:
+      - studycore-network
+
+  # Task Manager API
+  tasks-api:
+    build:
+      context: ./tasks-api
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGODB_URI=mongodb+srv://studycore-user:StudyCore2025!@studycore-cluster.hrf7olj.mongodb.net/studycore?retryWrites=true&w=majority&appName=studycore-cluster
+      - PORT=5001
+    networks:
+      - studycore-network
+
+  # Pomodoro Timer Service
+  pomodoro-api:
+    build:
+      context: ./pomodoro-api
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      - MONGODB_URI=mongodb+srv://studycore-user:StudyCore2025!@studycore-cluster.hrf7olj.mongodb.net/studycore?retryWrites=true&w=majority&appName=studycore-cluster
+      - PORT=5002
+    networks:
+      - studycore-network
+
+  # Notes API
+  notes-api:
+    build:
+      context: ./notes-api
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - MONGODB_URI=mongodb+srv://studycore-user:StudyCore2025!@studycore-cluster.hrf7olj.mongodb.net/studycore?retryWrites=true&w=majority&appName=studycore-cluster
+      - PORT=5003
+    networks:
+      - studycore-network
+
+  # Habit Tracker API
+  habits-api:
+    build:
+      context: ./habits-api
+      dockerfile: Dockerfile
+    ports:
+      - "5004:5004"
+    environment:
+      - MONGODB_URI=mongodb+srv://studycore-user:StudyCore2025!@studycore-cluster.hrf7olj.mongodb.net/studycore?retryWrites=true&w=majority&appName=studycore-cluster
+      - PORT=5004
+    networks:
+      - studycore-network
+
+  # Removed local mongo service since we're using Atlas
+
+networks:
+  studycore-network:
+    driver: bridge
+
+# Removed volumes since we're using Atlas
